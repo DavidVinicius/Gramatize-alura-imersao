@@ -1,95 +1,133 @@
+'use client';
+
 import Image from "next/image";
 import styles from "./page.module.css";
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import { runChat } from "./services/gemini";
+import { Button } from "react-bootstrap";
+import { useState } from "react";
+import MySpinner from "./components/Spinner";
+import Question from "./components/Pergunta";
+import ModalShowAnswer from "./components/Modal";
+import ModalFinishQuestion from "./components/ModalFinishQuestion";
+import ModalCredentials from "./components/ModalCredencial";
+
 
 export default function Home() {
+  
+  const [loading, setLoading] = useState(false);
+  
+  const [finish, setFinish] = useState(false);
+  
+  const [acertos, setAcertos] = useState(0);
+
+  const [rounds, setRounds] = useState(0);
+
+  const [dontHaveQuestion, setdontHaveQuestion] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [question, setQuestion] = useState({
+    pergunta: null,
+    alternativaCorreta: null,
+    justificativa: '',
+    index: null,
+    alternativas: []
+  });
+
+  const [answer, setAnswer] = useState({
+    result: '',
+    justification: '',    
+  });
+
+  async function gerarPergunta() {
+    let typeQuestions = ["acentuação", "vírgula", 'crase', 'classe gramatical'];
+
+    let randomIndex = Math.floor(Math.random() * typeQuestions.length)
+    
+    setFinish(false);
+    setLoading(true);
+    
+    const text = await runChat(typeQuestions[randomIndex])
+    setRounds(rounds + 1);
+
+    setQuestion(text);
+    
+    setLoading(false);
+    setdontHaveQuestion(false);
+  }
+
+  function checkAnswer(label, index) {
+    console.log(label, index);
+
+    let isCorrect = question.index == index ? "Parabéns, você acertou!" : "Você errou!";
+
+    if (question.index == index) {
+      setAcertos(acertos+1);
+    }
+
+    setAnswer({
+      result: isCorrect,
+      justification: question.justificativa
+    })
+        
+    setShowModal(true);
+    console.log(isCorrect);
+  }
+
+  function nextQuestion() {
+    setShowModal(false);
+    gerarPergunta();
+  }
+
+  function finishQuiz() {
+    setShowModal(false)
+    setFinish(true);
+    setdontHaveQuestion(true);
+    setRounds(0);
+  }
+
+  
   return (
     <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+      <Container>
+        <Row>
+          <Col md={12}>
+            <h1 className="display-3 text-white">Gramatize</h1>
+            <p className="text-white display-6">Pratique seu conhecimento de gramática com o Gemini</p>
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+            {
+              dontHaveQuestion
+              && <Button variant="outline-success" size="lg" onClick={() => gerarPergunta()}>
+              Gerar pergunta
+            </Button>}
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
+            {
+              !dontHaveQuestion
+              && <h3 className="display-6 text-white"> {acertos} acertos!</h3>
+            }
+          </Col>
+        </Row>
+        
+        <Row className="mt-3">
+          {question.pergunta !== null && !dontHaveQuestion
+            &&
+            <Question myQuestion={question} check={checkAnswer} round={rounds} />
+          }
+        </Row>
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
+        <Row>
+          <MySpinner loading={loading} />
+          
+          <ModalShowAnswer showModal={showModal} changeModal={setShowModal} answer={answer} nextQuestion={nextQuestion} finishQuiz={finishQuiz} />
+          
+          {finish && <ModalFinishQuestion acertos={acertos} />}
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
+          <ModalCredentials />
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+        </Row>
+      </Container>
+
     </main>
   );
 }
