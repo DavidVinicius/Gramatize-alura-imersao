@@ -7,6 +7,6 @@ A ideia é dar a oportunidade para aqueles que gostam de praticar um pouquinho d
 
 Você pode testar o projeto nessa url: https://gramatize-alura-imersao-v8q8.vercel.app/
 
-##Imagens
+## Imagens
 
 ![Tela principal](./images/gramatize.png)
