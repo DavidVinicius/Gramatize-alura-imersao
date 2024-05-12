@@ -16,7 +16,7 @@ function ModalCredentials({  }) {
     function confirmarChanve() {        
         console.log(inputValue)
         setGeminiKey(inputValue);
-        localStorage.setItem("GEMINI_KEY", inputValue);
+        global?.window && window.localStorage.setItem("GEMINI_KEY", inputValue);
         setShowModal(false);
     }
     
